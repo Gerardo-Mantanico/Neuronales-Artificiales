@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ANN desde cero — Proyecto 2 USAC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────── -->
+<header>
+  <div class="header-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="5"  cy="12" r="2"/>
+        <circle cx="5"  cy="6"  r="2"/>
+        <circle cx="5"  cy="18" r="2"/>
+        <circle cx="12" cy="9"  r="2"/>
+        <circle cx="12" cy="15" r="2"/>
+        <circle cx="19" cy="12" r="2"/>
+        <line x1="7"  y1="12" x2="10" y2="9"/>
+        <line x1="7"  y1="6"  x2="10" y2="9"/>
+        <line x1="7"  y1="18" x2="10" y2="15"/>
+        <line x1="7"  y1="12" x2="10" y2="15"/>
+        <line x1="14" y1="9"  x2="17" y2="12"/>
+        <line x1="14" y1="15" x2="17" y2="12"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <span class="brand-title">Red Neuronal ANN</span>
+      <span class="brand-sub">784 → 64 → 10 · MNIST</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge-course">IA-1 · USAC CUNOC · Ing. Daniel González</span>
+    <div class="status-pill" id="status-pill">
+      <span class="status-dot"></span>
+      <span class="status-label" id="status-label">Listo</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Layout principal ────────────────────────────────── -->
+<div class="app-layout">
+
+  <!-- ── Sidebar ──────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <!-- Entrenamiento -->
+    <div class="panel">
+      <h2>
+        <svg class="h2-icon" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 3a7 7 0 100 14A7 7 0 0010 3zm0 1.5a5.5 5.5 0 110 11 5.5 5.5 0 010-11zM10 7a1 1 0 00-1 1v2H7a1 1 0 000 2h2v2a1 1 0 002 0v-2h2a1 1 0 000-2h-2V8a1 1 0 00-1-1z"/>
+        </svg>
+        Entrenamiento
+      </h2>
+
+      <div class="input-group">
+        <label for="input-epochs">Épocas</label>
+        <input id="input-epochs" type="number" value="20" min="1" max="100" />
+      </div>
+
+      <div class="input-group">
+        <label for="input-lr">Learning Rate</label>
+        <input id="input-lr" type="number" value="0.01" step="0.001" min="0.0001" max="1" />
+      </div>
+
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-meta">
+          <span>Progreso</span>
+          <span id="progress-text">0 / 0</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="btn-train" class="btn btn-success">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l10 5-10 5V3z"/></svg>
+          Entrenar
+        </button>
+        <button id="btn-stop" class="btn btn-danger" disabled>
+          <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="1"/></svg>
+          Detener
+        </button>
+      </div>
+
+      <button id="btn-step" class="btn btn-outline w-full">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 4l6 4-6 4V4zm7 0h2v8h-2V4z"/></svg>
+        Paso a Paso
+      </button>
+    </div>
+
+    <!-- Métricas -->
+    <div class="panel">
+      <h2>
+        <svg class="h2-icon" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+        </svg>
+        Métricas
+      </h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Época</div>
+          <div class="stat-value" id="stat-epoch">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Loss</div>
+          <div class="stat-value loss-color" id="stat-loss">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Accuracy</div>
+          <div class="stat-value acc-color" id="stat-acc">—</div>
+        </div>
+        <div class="stat-card stat-pred-card">
+          <div class="stat-label">Predicción</div>
+          <div class="stat-value prediction-display" id="stat-pred">?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cámara -->
+    <div class="panel">
+      <h2>
+        <svg class="h2-icon" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 110-6 3 3 0 010 6z"/>
+        </svg>
+        Cámara Web
+      </h2>
+      <div class="btn-row">
+        <button id="btn-camera" class="btn btn-outline">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 5a2 2 0 00-2 2v5a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-.586l-.707-.707A1 1 0 0010 4H6a1 1 0 00-.707.293L4.586 5H4zm4 7a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+          Activar
+        </button>
+        <button id="btn-capture" class="btn btn-primary" disabled>
+          <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="3"/><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 1.5a5.5 5.5 0 110 11 5.5 5.5 0 010-11z"/></svg>
+          Capturar
+        </button>
+      </div>
+    </div>
+
+    <!-- Exportar -->
+    <button id="btn-export" class="btn btn-ghost w-full">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 12l-4-4h2.5V3h3v5H12L8 12zM3 13h10v1.5H3V13z"/></svg>
+      Exportar Gráfica
+    </button>
+
+  </aside>
+
+  <!-- ── Contenido principal ──────────────────────────── -->
+  <main class="main-content">
+
+    <!-- Fila superior -->
+    <div class="row row-top">
+      <div class="panel panel-network">
+        <h2>
+          <svg class="h2-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.396 0 2.757.3 4 .804V4.804zm1 0v10A7.969 7.969 0 0114.5 14c1.255 0 2.443.29 3.5.804V4.804A7.968 7.968 0 0014.5 4c-1.396 0-2.757.3-4 .804z"/>
+          </svg>
+          Topología de la Red
+        </h2>
+        <canvas id="canvas-network" width="480" height="360"></canvas>
+      </div>
+
+      <div class="panel panel-chart">
+        <h2>
+          <svg class="h2-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+          </svg>
+          Curva de Pérdida &amp; Accuracy
+        </h2>
+        <canvas id="canvas-loss"></canvas>
+      </div>
+    </div>
+
+    <!-- Fila inferior: cámara + thumbnail + softmax -->
+    <div class="row row-bottom">
+
+      <div class="panel panel-cam">
+        <h2>
+          <svg class="h2-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 110-6 3 3 0 010 6z"/>
+          </svg>
+          Vista en Vivo
+        </h2>
+        <div class="video-wrap">
+          <video id="video-feed" autoplay playsinline muted></video>
+          <div class="video-placeholder" id="video-placeholder">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="4" y="10" width="40" height="28" rx="3"/>
+              <circle cx="24" cy="24" r="8"/>
+              <circle cx="24" cy="24" r="3"/>
+            </svg>
+            <span>Cámara inactiva</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-thumb">
+        <h2>
+          <svg class="h2-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+          </svg>
+          Imagen 28×28
+        </h2>
+        <div class="thumb-container">
+          <div class="thumb-frame">
+            <img id="img-thumbnail" src="" alt="28×28" />
+            <div class="thumb-empty" id="thumb-empty">
+              <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2">
+                <rect x="2" y="2" width="28" height="28" rx="2"/>
+                <path d="M8 24l6-10 4 7 3-5 5 8"/>
+              </svg>
+            </div>
+          </div>
+          <p class="thumb-hint">Grises · Otsu · 784 valores</p>
+        </div>
+      </div>
+
+      <div class="panel panel-probs">
+        <h2>
+          <svg class="h2-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2 3 3 0 006 0 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/>
+          </svg>
+          Probabilidades Softmax
+        </h2>
+        <div class="prob-bars">
+          {% for i in range(10) %}
+          <div class="prob-row" id="prob-row-{{ i }}">
+            <span class="prob-digit">{{ i }}</span>
+            <div class="prob-track">
+              <div class="prob-fill" id="prob-bar-{{ i }}"></div>
+            </div>
+            <span class="prob-val" id="prob-val-{{ i }}">0%</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div><!-- /row-bottom -->
+  </main>
+
+</div><!-- /app-layout -->
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="{{ url_for('static', filename='js/network_viz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/camera.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+</body>
+</html>
