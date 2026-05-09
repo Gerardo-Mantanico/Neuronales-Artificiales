@@ -38,6 +38,10 @@ def start_training():
         def emit_progress(epoch, loss, acc):
             if _stop_flag.is_set():
                 return
+            from web_app.sockets.events import any_connected
+            if not any_connected():
+                _stop_flag.set()
+                return
             socketio.emit("training_update", {
                 "epoch": epoch,
                 "loss": round(loss, 6),

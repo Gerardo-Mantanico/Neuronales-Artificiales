@@ -1,13 +1,26 @@
+import threading
+
+_connected_sids: set = set()
+_lock = threading.Lock()
+
+
 def register_events(socketio):
     """Registra los eventos WebSocket del servidor."""
 
     @socketio.on("connect")
     def on_connect():
-        print("Cliente conectado")
+        from flask import request
+        with _lock:
+            _connected_sids.add(request.sid)
 
     @socketio.on("disconnect")
     def on_disconnect():
-        print("Cliente desconectado")
+        from flask import request
+        with _lock:
+            _connected_sids.discard(request.sid)
+        if not _connected_sids:
+            from web_app.routes.training import _stop_flag
+            _stop_flag.set()
 
     @socketio.on("request_status")
     def on_request_status():
@@ -19,3 +32,8 @@ def register_events(socketio):
             "loss":  network.loss_history[-1] if network.loss_history else 0,
             "accuracy": network.accuracy_history[-1] if network.accuracy_history else 0,
         })
+
+
+def any_connected() -> bool:
+    with _lock:
+        return bool(_connected_sids)
