@@ -1,4 +1,4 @@
-# 🖼️ Fase 2 — Procesamiento de Imagen
+# Fase 2 — Procesamiento de Imagen
 ## Desglose Técnico Completo: Cámara → 28×28 → Vector
 
 **Proyecto 2 — Inteligencia Artificial 1 | USAC CUNOC**

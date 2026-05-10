@@ -15,7 +15,7 @@ proyecto2_ann/
 ├── .gitignore                      ← Excluye venv, pycache, MNIST .gz, reportes
 │
 ├── neural_network/                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-│   │                               🧠 FASE 1 — Motor neuronal desde cero
+│   │                               FASE 1 — Motor neuronal desde cero
 │   ├── __init__.py                 Exporta MLP, funciones y clases del módulo
 │   ├── initializer.py              Inicialización He (W1) y Xavier (W2), seed=42
 │   ├── activations.py              relu, relu_derivative, softmax, sigmoid
@@ -25,14 +25,14 @@ proyecto2_ann/
 │   └── debug.py                    Modo debug: impresión con 4 decimales por iteración
 │
 ├── image_processing/               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-│   │                               🖼️  FASE 2 — Pipeline cámara → vector 784
+│   │                               FASE 2 — Pipeline cámara → vector 784
 │   ├── __init__.py                 Exporta decode_frame, detect_digit_region, preprocess_image
 │   ├── capture.py                  base64 del navegador → imagen BGR (OpenCV)
 │   ├── roi_detector.py             grises → blur → Otsu → contornos → bounding box
 │   └── preprocessor.py            cuadrado → 28×28 → flatten → normalizar [0,1]
 │
 ├── web_app/                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-│   │                               🌐 FASE 3 — Aplicación web interactiva
+│   │                               FASE 3 — Aplicación web interactiva
 │   ├── __init__.py
 │   │
 │   ├── routes/                     Endpoints REST

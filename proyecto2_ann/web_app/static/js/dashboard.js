@@ -22,7 +22,13 @@ document.addEventListener("DOMContentLoaded", () => {
     Charts.update(data.epoch, data.loss, data.accuracy);
 
     if (data.weights_sample) {
-      NetViz.updateWeights({ W2_sample: data.weights_sample.W2 });
+      NetViz.updateWeights({
+        W1_sample: data.weights_sample.W1,
+        W2_sample: data.weights_sample.W2,
+        input_activations: data.activations ? data.activations.X : null,
+        hidden_activations: data.activations ? data.activations.A1 : null,
+        output_activations: data.activations ? data.activations.A2 : null,
+      });
     }
   });
 

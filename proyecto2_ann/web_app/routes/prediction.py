@@ -8,19 +8,7 @@ bp = Blueprint("prediction", __name__, url_prefix="/predict")
 
 @bp.route("", methods=["POST"])
 def predict():
-    """
-    Recibe un frame base64 desde la cámara, lo procesa y retorna la predicción.
-
-    Body JSON:
-      { "image": "<base64 string>" }
-
-    Respuesta JSON:
-      {
-        "digit":         int,
-        "probabilities": [float x10],
-        "thumbnail_b64": str   (imagen 28x28 para mostrar en UI)
-      }
-    """
+    # Recibe la imagen de la camara en base64, predice y regresa el resultado
     data = request.get_json()
     if not data or "image" not in data:
         return jsonify({"error": "Falta campo 'image'"}), 400
@@ -35,7 +23,7 @@ def predict():
     probabilities = network.predict_proba(vector)
     digit = int(np.argmax(probabilities))
 
-    # Codificar thumbnail para mostrar en la UI
+    # Codificar la miniatura para pintarla en el HTML
     import cv2
     _, buffer = cv2.imencode(".png", thumbnail)
     thumb_b64 = base64.b64encode(buffer).decode("utf-8")

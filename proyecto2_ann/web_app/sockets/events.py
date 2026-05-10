@@ -1,11 +1,11 @@
 import threading
 
-_connected_sids: set = set()
+_connected_sids = set()
 _lock = threading.Lock()
 
 
 def register_events(socketio):
-    """Registra los eventos WebSocket del servidor."""
+    # Eventos de websocket para la conexion con la UI
 
     @socketio.on("connect")
     def on_connect():
@@ -18,13 +18,14 @@ def register_events(socketio):
         from flask import request
         with _lock:
             _connected_sids.discard(request.sid)
+        # Si no queda nadie conectado, paramos el hilo de entrenamiento
         if not _connected_sids:
             from web_app.routes.training import _stop_flag
             _stop_flag.set()
 
     @socketio.on("request_status")
     def on_request_status():
-        """El cliente solicita el estado actual de la red."""
+        # El cliente pide las metricas actuales
         from flask import current_app
         network = current_app.config["NETWORK"]
         socketio.emit("training_update", {

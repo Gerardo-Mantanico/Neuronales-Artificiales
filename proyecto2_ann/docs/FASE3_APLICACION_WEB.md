@@ -1,4 +1,4 @@
-# 🌐 Fase 3 — Aplicación Web Interactiva
+# Fase 3 — Aplicación Web Interactiva
 ## Desglose Técnico Completo: Visualización + Control + Tiempo Real
 
 **Proyecto 2 — Inteligencia Artificial 1 | USAC CUNOC**

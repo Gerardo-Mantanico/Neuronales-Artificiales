@@ -1,7 +1,7 @@
 import os
 import sys
 
-# Permite importar módulos desde la raíz del proyecto
+# Para poder importar cosas de la raiz
 sys.path.insert(0, os.path.dirname(__file__))
 
 from flask import Flask, render_template
@@ -16,7 +16,7 @@ from web_app.routes.reports import bp as reports_bp
 from web_app.sockets.events import register_events
 
 
-def create_app() -> Flask:
+def create_app():
     app = Flask(
         __name__,
         template_folder="web_app/templates",
@@ -26,15 +26,24 @@ def create_app() -> Flask:
 
     socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
 
-    # Cargar MNIST una sola vez al inicio
+    # Cargamos MNIST una vez para que no tarde en cada llamada
     print("Cargando dataset MNIST...")
     X_train, y_train, X_test, y_test = load_mnist()
 
-    # Instanciar red y logger
+    # Instanciamos la red y la bitacora de pesos
     network = MLP(lr=0.01, seed=42)
     logger  = WeightLogger(filepath="reports/weight_matrix.log")
 
-    # Guardar en config para acceso desde las rutas
+    # Si hay pesos guardados, los cargamos
+    weights_path = "models/mlp_weights.npz"
+    if os.path.exists(weights_path):
+        try:
+            network.load(weights_path)
+            print(f"Cargado pesos desde {weights_path}")
+        except Exception as e:
+            print(f"No se pudieron cargar pesos: {e}")
+
+    # Guardamos en la config de flask para poder usarlos en las rutas
     app.config["NETWORK"]  = network
     app.config["LOGGER"]   = logger
     app.config["SOCKETIO"] = socketio
@@ -43,12 +52,12 @@ def create_app() -> Flask:
     app.config["X_TEST"]   = X_test
     app.config["Y_TEST"]   = y_test
 
-    # Registrar blueprints
+    # Blueprints de las rutas
     app.register_blueprint(training_bp)
     app.register_blueprint(prediction_bp)
     app.register_blueprint(reports_bp)
 
-    # Registrar eventos WebSocket
+    # Eventos de WebSocket
     register_events(socketio)
 
     @app.route("/")

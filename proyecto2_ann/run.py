@@ -5,6 +5,9 @@ Uso:
   python run.py            ← modo desarrollo (debug=True)
   python run.py --prod     ← modo producción (debug=False)
 """
+from gevent import monkey
+monkey.patch_all()
+
 import sys
 import os
 
@@ -22,4 +25,4 @@ if __name__ == "__main__":
     print("  Modo:", "desarrollo" if debug else "producción")
     print("=" * 50 + "\n")
 
-    socketio.run(app, host="0.0.0.0", port=5000, debug=debug)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=debug, use_reloader=False)

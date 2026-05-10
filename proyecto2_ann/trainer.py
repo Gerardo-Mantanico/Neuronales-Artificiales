@@ -5,35 +5,25 @@ from neural_network.logger import WeightLogger
 
 
 def train(
-    network: MLP,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    epochs: int = 20,
-    batch_size: int = 32,
-    logger: WeightLogger = None,
+    network,
+    X_train,
+    y_train,
+    epochs=20,
+    batch_size=32,
+    logger=None,
     callback=None,
-) -> dict:
-    """
-    Entrena la red con mini-batch Gradient Descent.
-
-    Parámetros:
-      network:    instancia de MLP ya inicializada
-      X_train:    (N, 784) imágenes normalizadas
-      y_train:    (N,)     etiquetas enteras 0–9
-      epochs:     número de épocas completas
-      batch_size: tamaño del mini-batch
-      logger:     instancia de WeightLogger (puede ser None)
-      callback:   función callback(epoch, loss, acc) para WebSocket
-
-    Retorna:
-      {'loss_history': [...], 'accuracy_history': [...]}
-    """
+    stop_event=None,
+):
+    # Metodo para entrenar la red usando mini-batches de forma secuencial
     n_muestras = len(X_train)
     network.iteration = 0
 
     for epoch in range(1, epochs + 1):
+        if stop_event is not None and stop_event.is_set():
+            print("Entrenamiento cancelado por el usuario.")
+            break
 
-        # Mezclar datos en cada epoch
+        # Barajar los datos antes de cada epoca
         indices = np.random.permutation(n_muestras)
         X_shuffled = X_train[indices]
         y_shuffled = y_train[indices]
@@ -42,6 +32,9 @@ def train(
         correctas_epoch = 0
 
         for inicio in range(0, n_muestras, batch_size):
+            if stop_event is not None and stop_event.is_set():
+                break
+
             fin = min(inicio + batch_size, n_muestras)
             X_batch = X_shuffled[inicio:fin]
             y_batch = y_shuffled[inicio:fin]
@@ -49,24 +42,34 @@ def train(
             for X_i, y_i in zip(X_batch, y_batch):
                 network.iteration += 1
 
-                # Forward
+                # Forward pass
                 Z1, A1, Z2, A2 = network.forward(X_i)
 
-                # Métricas
+                # Calcular perdida y aciertos de la epoca
                 y_oh = one_hot(int(y_i))
                 loss_epoch += cross_entropy_loss(A2, y_oh)
                 correctas_epoch += accuracy(A2, int(y_i))
 
-                # Backward
+                # Backward pass
                 dW1, db1, dW2, db2 = network.backward(X_i, y_oh, Z1, A1, A2)
 
-                # Actualizar pesos
+                # Modificar pesos
                 network.update(dW1, db1, dW2, db2)
 
-                # Bitácora en iteraciones objetivo
+                # Registrar pesos en la bitacora si toca
                 if logger is not None:
                     logger.log_weights(network.iteration, network.W1)
 
+            # Ceder control a gevent cada 50 batches para que no se congele el SocketIO
+            batch_idx = inicio // batch_size
+            if batch_idx % 50 == 0:
+                import gevent
+                gevent.sleep(0)
+
+        if stop_event is not None and stop_event.is_set():
+            break
+
+        # Sacar promedios de la epoca
         loss_avg = loss_epoch / n_muestras
         acc_avg = correctas_epoch / n_muestras
 
@@ -84,18 +87,8 @@ def train(
     }
 
 
-def train_single_step(
-    network: MLP,
-    X_i: np.ndarray,
-    y_i: int,
-    logger: WeightLogger = None,
-) -> dict:
-    """
-    Ejecuta exactamente UN paso de forward + backward + update.
-    Usado por el modo educativo (paso a paso) desde la UI.
-
-    Retorna métricas y snapshot de pesos para la visualización.
-    """
+def train_single_step(network, X_i, y_i, logger=None):
+    # Corre una sola iteracion de entrenamiento (para el modo paso a paso de la UI)
     network.iteration += 1
 
     Z1, A1, Z2, A2 = network.forward(X_i)
@@ -119,7 +112,6 @@ def train_single_step(
             "W1_sample": network.W1[0:5, 0:5].tolist(),
             "W2_sample": network.W2[0:5, 0:5].tolist(),
         },
-        # Activaciones para animar la visualización
         "activations": {
             "A1": A1.tolist(),
             "A2": A2.tolist(),
